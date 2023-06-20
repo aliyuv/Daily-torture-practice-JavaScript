@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <style>
+        #father {
+            width: 400px;
+            height: 700px;
+            position: absolute;
+            left: 100px;
+            top: 100px;
+            border: 1px solid #000;
+
+        }
+
+        #box {
+            width: 100px;
+            height: 100px;
+            background-color: red;
+            position: absolute;
+            left: 200px;
+            top: 200px;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+<div id="father">
+    <div id="box"></div>
+</div>
+<script>
+    const father = document.querySelector('#father')
+    const box = document.querySelector('#box')
+    const frame = 1000 / 60
+    let timer
+    let intervalId = {}
+    let bulletCount = 0
+    let position = 'lr'
+    let speed = 10
+    let isKeydown = false
+
+    //初始化子弹位置
+    let xSize = (box.offsetWidth / 2) + parseInt(window.getComputedStyle(box, null).getPropertyValue('left'))
+    let ySize = (box.offsetHeight) + parseInt(window.getComputedStyle(box, null).getPropertyValue('top'))
+
+    const positionValues = {
+        'lr': {'property': 'left', 'step': speed},
+        'rl': {'property': 'left', 'step': -speed},
+        'tb': {'property': 'top', 'step': speed},
+        'bt': {'property': 'top', 'step': -speed}
+    }
+
+    const fatherHeight = parseInt(window.getComputedStyle(father, null).getPropertyValue('height'))
+
+    function x() {
+        if (timer) {
+            clearTimeout(timer)
+        }
+
+        timer = setTimeout(() => {
+            //获取到旧的 left 值
+            const oldProperty = parseInt(window.getComputedStyle(box, null).getPropertyValue(positionValues[position][`property`]))
+            //获取到 step 10
+            const step = positionValues[position][`step`]
+            const newProperty = oldProperty + step
+
+            //父元素的宽度 减去 子元素的宽度
+            const boxSize = parseInt(window.getComputedStyle(box, null).getPropertyValue(positionValues[position]['property'] === `left` ? `width` : `height`))
+            const fatherSize = parseInt(window.getComputedStyle(father, null).getPropertyValue(positionValues[position]['property'] === `left` ? `width` : `height`))
+            const maxLimit = fatherSize - boxSize
+
+            if (newProperty < 0) {
+                box.style[positionValues[position]['property']] = '0px';
+            } else if (newProperty > maxLimit) {
+                box.style[positionValues[position]['property']] = maxLimit + 'px'
+            } else {
+                box.style[positionValues[position]['property']] = newProperty + 'px';
+            }
+
+            //动态计算子弹的位置
+            if (position === 'lr' || position === 'rl') {
+                xSize = (box.offsetWidth / 2) + parseInt(window.getComputedStyle(box, null).getPropertyValue('left'))
+            } else {
+                ySize = (box.offsetHeight) + parseInt(window.getComputedStyle(box, null).getPropertyValue('top'))
+            }
+
+            clearTimeout(timer)
+
+            if (isKeydown) {
+                x()
+            }
+
+        }, frame)
+    }
+
+    document.addEventListener('keyup', function (event) {
+        isKeydown = false
+    })
+
+    document.addEventListener('keydown', function (event) {
+        isKeydown = true
+
+        if (event.keyCode === 37 || event.keyCode === 38 || event.keyCode === 39 || event.keyCode === 40) {
+            x()
+        }
+
+        switch (event.keyCode) {
+            case 37:
+                // Handle up arrow key left
+                position = 'rl'
+                break;
+            case 38:
+                position = 'bt'
+                break;
+            case 39:
+                // Handle down arrow key down
+                position = 'lr'
+                break;
+            case 40:
+                // Handle down arrow key
+                position = 'tb'
+                break;
+        }
+        if (event.code === 'Space') { // 按下空格键
+            event.preventDefault()
+            // 创建新的子弹元素，添加到页面中
+            let bullet = document.createElement('div');
+            bullet.style.position = `absolute`
+            bullet.style.left = `${(box.offsetWidth / 2) + parseInt(window.getComputedStyle(box, null).getPropertyValue('left'))}px `
+            bullet.style.top = `${(box.offsetHeight) + parseInt(window.getComputedStyle(box, null).getPropertyValue('top'))}px`
+            bullet.style.width = `${5}px`
+            bullet.style.height = `${5}px`
+            bullet.style.background = `#009223`
+            bullet.style.borderRadius = `${100}%`
+            father.appendChild(bullet);
+            shootBullet(bullet, bulletCount);
+            bulletCount += 1
+        }
+    });
+
+    //开始子弹的运动
+    function shootBullet(bullet, bulletId) {
+        intervalId[bulletId] = setInterval(() => {
+            const oldTop = parseInt(window.getComputedStyle(bullet, null).getPropertyValue('top'))
+            const newTop = oldTop + 10
+            if (newTop > fatherHeight) {
+                bullet.style.display = 'none'
+                clearInterval(intervalId[bulletId])
+                delete intervalId[bulletId]
+            } else {
+                bullet.style.top = `${newTop}px`
+            }
+        }, 40);
+    }
+</script>
+</body>
+</html>
